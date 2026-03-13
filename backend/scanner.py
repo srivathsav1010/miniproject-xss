@@ -386,15 +386,16 @@ class XSSScanner:
              'fix':'# Strip style attributes, or validate against a strict allowlist of CSS properties'},
 
             # PROTOTYPE POLLUTION
+            # PROTOTYPE POLLUTION
             {'cat':'Prototype Pollution','sev':'HIGH','name':'__proto__ manipulation',
-             'regex':r'__proto__\s*[=\[]',
-             'desc':'Prototype pollution corrupts Object.prototype — can enable XSS via polluted sinks.',
-             'fix':'# Use Object.create(null) for dictionaries:\nconst safe = Object.create(null);\n\n# Sanitize JSON keys:\nJSON.parse(input, (k,v) => k === "__proto__" ? undefined : v);'},
+ 'regex':r'__proto__',
+ 'desc':'Prototype pollution corrupts Object.prototype — can enable XSS via polluted sinks.',
+ 'fix':'Reject "__proto__" keys in JSON objects.'},
 
-            {'cat':'Prototype Pollution','sev':'HIGH','name':'constructor.prototype access',
-             'regex':r'constructor\s*\.\s*prototype',
-             'desc':'Alternative prototype pollution path.',
-             'fix':'# Reject these keys in any JSON/object parsing\nBAD_KEYS = {"__proto__", "constructor", "prototype"}'},
+{'cat':'Prototype Pollution','sev':'HIGH','name':'constructor.prototype access',
+ 'regex':r'constructor\s*\.\s*prototype',
+ 'desc':'Alternative prototype pollution path.',
+ 'fix':'Reject "constructor" and "prototype" keys.'},
 
             # TEMPLATE INJECTION
             {'cat':'Template Injection','sev':'HIGH','name':'Dangerous template expression',
